@@ -488,7 +488,7 @@
           <button class="btn g" onclick="UI.wipeAsk()">🧹 기록 초기화</button>
           <button class="btn g" onclick="UI.opts()">⚙ 설정</button>
         </div>
-        <p class="sub" style="font-size:11px;color:#4a556e">v1.1</p>
+        <p class="sub" style="font-size:11px;color:#4a556e">v1.11</p>
       </div>
 
       <!-- 기록 초기화 확인 — 되돌릴 수 없으니 한 번 묻는다 -->
@@ -551,9 +551,9 @@
       <div class="scroll">
         <div class="tcards" id="tCards"></div>
         <div class="lg">
-          <span><i class="dot" style="background:#2bd38a"></i>빠르게 맞힘</span>
-          <span><i class="dot" style="background:#ffd450"></i>느림</span>
-          <span><i class="dot" style="background:#ff6b6b"></i>틀린 적 있음</span>
+          <span><i class="dot" style="background:#2bd38a"></i>익힘</span>
+          <span><i class="dot" style="background:#ffd450"></i>연습 중</span>
+          <span><i class="dot" style="background:#ff6b6b"></i>다시 보기</span>
         </div>
         <p class="sub" id="tNote" style="font-size:12.5px"></p>
       </div>
@@ -651,9 +651,9 @@
       <div class="scroll">
         <h2 class="mapT">나의 구구단 지도</h2>
         <div class="lg">
-          <span><i class="dot" style="background:#2bd38a"></i>빠름</span>
-          <span><i class="dot" style="background:#ffd450"></i>느림</span>
-          <span><i class="dot" style="background:#ff6b6b"></i>틀림</span>
+          <span><i class="dot" style="background:#2bd38a"></i>익힘</span>
+          <span><i class="dot" style="background:#ffd450"></i>연습 중</span>
+          <span><i class="dot" style="background:#ff6b6b"></i>다시 보기</span>
           <span><i class="dot" style="background:rgba(255,255,255,.09)"></i>안 나옴</span>
         </div>
         <div class="tcards" id="eCards"></div>
@@ -809,13 +809,13 @@ const BASE={rev:2.2,cool:5.0,fast:1.10,ahp:0.34,wall:100,allyMax:6,bless:.038,
    제한시간은 5.0 → 1.2 를 등비로 나눈다(매 칸 25% 단축). 체감이 균등해지는 쪽은 등차가 아니라 등비다.
    RT(반응 한계)는 사람의 바닥값이라 0.33 아래로는 내리지 않는다. */
 const DLIST=[
-  {k:"g0",lb:"연습",       skill:"입문",     limit:10.0,rt:.50,pen:{t:"none"},   pl:"없음"},
-  {k:"g1",lb:"초등 저학년", skill:"매우 낮음", limit: 5.0,rt:.50,pen:{t:"dn",n:1}, pl:"★ 1칸 강등"},
-  {k:"g2",lb:"초등 고학년", skill:"낮음",     limit: 3.8,rt:.45,pen:{t:"dn",n:1}, pl:"★ 1칸 강등"},
-  {k:"g3",lb:"중고등학생",  skill:"보통",     limit: 2.8,rt:.40,pen:{t:"rs",n:1}, pl:"★1로 초기화"},
-  {k:"g4",lb:"성인",       skill:"높음",     limit: 2.1,rt:.35,pen:{t:"rs",n:1}, pl:"★1로 초기화"},
-  {k:"g5",lb:"구구단 천재", skill:"매우 높음", limit: 1.6,rt:.33,pen:{t:"kill",n:1},pl:"기사 1명 전사"},
-  {k:"g6",lb:"구구단 마스터",skill:"최고",    limit: 1.2,rt:.33,pen:{t:"kill",n:2},pl:"기사 2명 전사"}
+  {k:"g0",lb:"훈련장",     skill:"연습용",          limit:10.0,rt:.50,pen:{t:"none"},   pl:"없음"},
+  {k:"g1",lb:"견습 기사",   skill:"초등 저학년 수준", limit: 5.0,rt:.50,pen:{t:"rs",n:1}, pl:"★1로 초기화"},
+  {k:"g2",lb:"정예 기사",   skill:"초등 고학년 수준", limit: 3.8,rt:.45,pen:{t:"rs",n:1}, pl:"★1로 초기화"},
+  {k:"g3",lb:"수호 기사",   skill:"중·고등학생 수준", limit: 2.8,rt:.40,pen:{t:"kill",n:1},pl:"기사 1명 전사"},
+  {k:"g4",lb:"기사단장",    skill:"일반 성인 수준",   limit: 2.1,rt:.35,pen:{t:"kill",n:1},pl:"기사 1명 전사"},
+  {k:"g5",lb:"왕국의 검",   skill:"구구단 천재",     limit: 1.6,rt:.33,pen:{t:"kill",n:2},pl:"기사 2명 전사"},
+  {k:"g6",lb:"전설의 기사", skill:"구구단 마스터",   limit: 1.2,rt:.33,pen:{t:"kill",n:3},pl:"기사 3명 전사"}
 ];
 const DIFFS={};
 DLIST.forEach(d=>{DIFFS[d.k]=Object.assign({},BASE,d);});
@@ -880,7 +880,22 @@ function buildPairs(){
   if(!PAIRS.length)PAIRS.push({a:7,b:8});
 }
 const K=(a,b)=>a+","+b;
-const st=(a,b)=>G.stats[K(a,b)]||(G.stats[K(a,b)]={n:0,w:0,best:1e9,sum:0});
+const st=(a,b)=>G.stats[K(a,b)]||(G.stats[K(a,b)]={n:0,w:0,best:1e9,sum:0,r:0,rn:0});
+/* 최근 8번의 결과를 비트로 쌓는다 — 맨 아래 비트가 가장 최근, 1이 정답 */
+const recPush=(s,ok)=>{s.r=(((s.r||0)<<1)|(ok?1:0))&255;s.rn=Math.min(8,(s.rn||0)+1);};
+/* 칸 색은 '누적'이 아니라 '요즘'을 보여준다.
+   한 번 틀렸다고 영원히 빨강이면, 나아진 것을 아이가 볼 수가 없다.
+   빨강 → 두 번 연속 맞히면 노랑 → 네 번 연속 맞히고 빠르면 초록. */
+function cellCls(q,slowMs){
+  if(!q||!q.n)return "";
+  const r=q.r||0, n=Math.min(8,q.rn||0);
+  if(!n)return q.w>0?"w":"f";                       /* 예전 기록(최근 정보 없음) */
+  const miss=(k)=>{for(let i=0;i<Math.min(k,n);i++)if(!((r>>i)&1))return true;return false;};
+  if(miss(2))return "w";                            /* 최근 둘 안에 틀림 */
+  if(miss(4))return "s";                            /* 회복 중 */
+  const good=q.n-q.w, av=good?q.sum/good:9e9;
+  return av>slowMs?"s":"f";
+}
 
 function pick(){
   G.seen++;
@@ -1269,9 +1284,9 @@ function answer(v,btn){
   const c=G.cur,ans=c.a*c.b,ms=performance.now()-G.t0,s=st(c.a,c.b);
   s.n++;
   const eq=c.a+" × "+c.b+" = "+ans;
-  if(TU.on)TU.qi++;
   if(v===ans){
-    s.sum+=ms;if(ms<s.best)s.best=ms;G.nc++;G.ms+=ms;
+    if(TU.on){TU.qi++;TU.miss=0;}
+    s.sum+=ms;if(ms<s.best)s.best=ms;G.nc++;G.ms+=ms;recPush(s,1);
     const before=lvGrade(G.lvl);
     const fast=ms<D.fast*1000;
     if(btn)btn.classList.add("ok");
@@ -1280,7 +1295,7 @@ function answer(v,btn){
     G.qState="wait";
     setTimeout(()=>{if(G.mode!=="play")return;hidePop();applyReward(eq,fast,before,ms);},300);
   }else{
-    s.w++;G.nw++;G.wq.push({a:c.a,b:c.b,due:G.seen+3});
+    s.w++;G.nw++;recPush(s,0);G.wq.push({a:c.a,b:c.b,due:G.seen+3});
     if(btn)btn.classList.add("no");
     snd("no");
     [...$("pch").children].forEach(b=>{if(+b.textContent===ans)b.classList.add("ok");});
@@ -1291,7 +1306,7 @@ function answer(v,btn){
 function timeout(){
   if(G.locked||G.mode!=="play")return;G.locked=true;
   const c=G.cur,ans=c.a*c.b,s=st(c.a,c.b);
-  s.n++;s.w++;G.nw++;G.timeouts++;G.wq.push({a:c.a,b:c.b,due:G.seen+3});
+  s.n++;s.w++;G.nw++;G.timeouts++;recPush(s,0);G.wq.push({a:c.a,b:c.b,due:G.seen+3});
   [...$("pch").children].forEach(b=>{if(+b.textContent===ans)b.classList.add("ok");});
   snd("no");G.qState="wait";
   const eq=c.a+" × "+c.b+" = "+ans;
@@ -1362,7 +1377,7 @@ function applyReward(eq,fast,beforeRank,ms){
   toReveal();
 }
 function penalize(eq,isTO){
-  if(TU.on)TU.qi++;
+  if(TU.on)tutMiss();
   if(D.pen.t!=="none")G.frenzy=1.7;
   red=Math.max(red,.5);
   const rate="";                 /* 판정은 칸 옆 라벨이 맡는다 */
@@ -2841,8 +2856,11 @@ function saveStats(){
   try{
     const prev=JSON.parse(localStorage.getItem("gc_stats")||"{}");
     for(const k in G.stats){
-      const s=G.stats[k],p=prev[k]||{n:0,w:0,best:1e9,sum:0};
-      prev[k]={n:p.n+s.n,w:p.w+s.w,best:Math.min(p.best,s.best),sum:p.sum+s.sum};
+      const s=G.stats[k],p=prev[k]||{n:0,w:0,best:1e9,sum:0,r:0,rn:0};
+      const sn=Math.min(8,s.rn||0), pn=Math.min(8-sn,p.rn||0);
+      const r=(((s.r||0)&((1<<sn)-1))|(((p.r||0)&((1<<pn)-1))<<sn))&255;
+      prev[k]={n:p.n+s.n,w:p.w+s.w,best:Math.min(p.best,s.best),sum:p.sum+s.sum,
+               r:r,rn:Math.min(8,sn+pn)};
     }
     localStorage.setItem("gc_stats",JSON.stringify(prev));
   }catch(e){}
@@ -2968,14 +2986,13 @@ function end(win){
       for(let b=1;b<=9;b++){
         const r=document.createElement("div");
         r.className="tr";r.textContent=a+"×"+b+"="+(a*b);
-        const q=G.stats[K(a,b)];
-        if(q&&q.n){const good=q.n-q.w,ag=good?q.sum/good:9e9;
-          r.classList.add(q.w>0?"w":ag>D.limit*550?"s":"f");}
+        const cls=cellCls(G.stats[K(a,b)],D.limit*550);
+        if(cls)r.classList.add(cls);
         card.appendChild(r);
       }
       h.appendChild(card);
     }
-    const weak=Object.entries(G.stats).filter(([,q])=>q.n&&(q.w>0||q.sum/q.n>D.limit*550))
+    const weak=Object.entries(G.stats).filter(([,q])=>cellCls(q,D.limit*550)==="w")
       .sort((x,y)=>y[1].w/y[1].n-x[1].w/x[1].n).slice(0,5).map(([k])=>k.replace(","," × "));
     $("eWeak").textContent=weak.length?"다음에 노릴 곳 — "+weak.join(" , "):"약점이 없다!";
   }
@@ -3040,7 +3057,7 @@ function mapBtn(){
 }
 function refreshTitle(){
   const d=DIFFS[curDK()];
-  const g=$("goSub");if(g)g.textContent=d.lb+" · 실력 "+d.skill;
+  const g=$("goSub");if(g)g.textContent=d.lb+" · "+d.skill;
   const bt=$("btnTest");
   if(bt){
     let done=false;try{done=!!localStorage.getItem("gc_tested");}catch(e){}
@@ -3056,7 +3073,7 @@ function buildDiff(){
     b.className="dRow"+(d.k===cur?" sel":"");
     const g=document.createElement("div");g.className="dg";
     g.innerHTML='<div class="dn">'+d.lb+'</div>'
-      +'<div class="dm">구구단 실력 <b>'+d.skill+'</b>　·　오답 시 <i>'+d.pl+'</i></div>';
+      +'<div class="dm"><b>'+d.skill+'</b>　·　오답 시 <i>'+d.pl+'</i></div>';
     b.appendChild(g);
     const cl=clearOf(d.k);
     if(d.k===rec&&!cl){b.classList.add("rec");
@@ -3096,9 +3113,17 @@ function tutMsgStep(dt){
   tutT=m.sec;
 }
 function tutOnce(key,tx,sec){if(TU.shown[key])return;TU.shown[key]=1;tutMsg(tx,sec);}
+/* 튜토리얼에서 틀리면 단계를 넘기지 않는다 — 보상을 못 봤으면 배운 게 아니다.
+   같은 설명을 한 번 더 들려주되, 세 번 막히면 그냥 넘어간다(막히면 재미가 없다). */
+function tutMiss(){
+  TU.miss=(TU.miss||0)+1;
+  if(TU.miss>=3){TU.miss=0;TU.qi++;return;}
+  delete TU.shown["q"+TU.qi];          /* 설명을 다시 들려준다 */
+  tutMsg("괜찮아요 — <b>한 번 더</b>",2.2);
+}
 
 function tutStart(){
-  TU.on=true;TU.qi=0;TU.hold=7.2;TU.shown={};TU.done=false;
+  TU.on=true;TU.qi=0;TU.hold=7.2;TU.shown={};TU.done=false;TU.miss=0;
   tutQ=[];tutT=0;
   $("tsAsk").classList.remove("on");$("tsDone").classList.remove("on");
   $("tsQuiz").classList.remove("on");
@@ -3281,7 +3306,7 @@ function tsRecommend(med,acc){
      '<div><b style="color:#8ddcff">'+med.toFixed(2)+'초</b><span>보통 때 걸린 시간</span></div>'
     +'<div><b style="color:#2bd38a">'+Math.round(acc*100)+'%</b><span>정확도</span></div>';
   $("tsRec").innerHTML='<div class="rl">추천 난이도</div><div class="rn">'+d.lb+'</div>'
-    +'<div class="rs">구구단 실력 '+d.skill+'　·　오답 시 '+d.pl+'</div>';
+    +'<div class="rs">'+d.skill+'　·　오답 시 '+d.pl+'</div>';
   /* 바로 들어가지 않는다 — 메인에서 자기 손으로 고르고 들어가게 */
   $("tsGo").onclick=()=>{snd("ok");UI.go("scTitle");};
   snd("up");refreshTitle();
@@ -3367,11 +3392,8 @@ const UI={
       for(let b=1;b<=9;b++){
         const r=document.createElement("button");
         r.className="tr";r.textContent=a+"×"+b+"="+(a*b);
-        const st=past[K(a,b)];
-        if(st&&st.n){
-          const good=st.n-st.w,av=good?st.sum/good:9e9;
-          r.classList.add(st.w>0?"w":av>2600?"s":"f");
-        }
+        const cls=cellCls(past[K(a,b)],2600);
+        if(cls)r.classList.add(cls);
         r.onclick=()=>{
           if(sel)sel.classList.remove("sel");
           r.classList.add("sel");sel=r;
