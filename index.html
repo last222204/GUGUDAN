@@ -413,8 +413,13 @@
     border-radius:14px;padding:11px 13px;margin-bottom:8px;color:#e8eefc;
     font-family:inherit;cursor:pointer}
   .dRow:active{transform:scale(.98)}
-  .dRow.sel{border-color:#2bd38a;background:rgba(43,211,138,.12);
-    box-shadow:0 0 20px rgba(43,211,138,.25)}
+  .dRow.sel{border-color:#ffd450;background:rgba(255,212,80,.13);
+    box-shadow:0 0 22px rgba(255,212,80,.33)}
+  .dRow.sel .dn{color:#ffe88a}
+  /* 고른 난이도 이름이 버튼에 들어간다 — '전설의 기사'까지 한 줄에 담겨야 한다 */
+  #dClose{flex:0 0 26%;font-size:clamp(14px,3.8vw,17px);padding:14px 4px}
+  #dGo{font-size:clamp(14px,3.8vw,18px);padding:14px 6px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis}
   .dRow .dn{font-size:clamp(16px,4.4vw,19px);font-weight:900;line-height:1.15}
   .dRow .dm{font-size:clamp(12px,3.1vw,13.5px);color:#8fa0c0;font-weight:800;margin-top:3px}
   .dRow .dm b{color:#ffd450;font-weight:900}
@@ -513,13 +518,13 @@
         <button class="btn d1" id="btnTest" onclick="UI.test()">🎯 튜토리얼<small>실력 테스트</small></button>
         <button class="btn d3" id="btnGo" onclick="UI.diff()">⚔ 전투 시작<small id="goSub"></small></button>
         <button class="btn g" style="font-size:clamp(15px,4.2vw,19px);padding:12px"
-                onclick="UI.hof()">🏆 명예의 전당</button>
+                onclick="HOFFLOW=false;UI.hof()">🏆 명예의 전당</button>
         <div class="row row3">
           <button class="btn g" onclick="UI.table()">📖 구구단표</button>
           <button class="btn g" onclick="UI.wipeAsk()">🧹 기록 초기화</button>
           <button class="btn g" onclick="UI.opts()">⚙ 설정</button>
         </div>
-        <p class="sub" style="font-size:11px;color:#4a556e">v1.21</p>
+        <p class="sub" style="font-size:11px;color:#4a556e">v1.23</p>
       </div>
 
       <!-- 기록 초기화 확인 — 되돌릴 수 없으니 한 번 묻는다 -->
@@ -537,7 +542,10 @@
       <div class="ov dov" id="ovDiff">
         <h2 class="dovT">난이도를 고르세요</h2>
         <div class="dlist" id="dList"></div>
-        <button class="btn g" onclick="UI.diffClose()">닫기</button>
+        <div class="row" style="flex:0 0 auto">
+          <button class="btn g" id="dClose" onclick="UI.diffClose()">닫기</button>
+          <button class="btn d1" id="dGo" onclick="UI.diffGo()">⚔ 시작</button>
+        </div>
       </div>
     </section>
 
@@ -579,7 +587,8 @@
         <p class="sub" id="hofNone" style="font-size:13.5px;display:none">
           아직 아무도 이름을 올리지 못했다.</p>
       </div>
-      <button class="btn g" style="flex:0 0 auto" onclick="UI.go('scTitle')">← 메인으로</button>
+      <button class="btn g" style="flex:0 0 auto" id="hofBack"
+              onclick="UI.hofBack()">← 메인으로</button>
     </section>
 
     <!-- ===== 구구단표 ===== -->
@@ -683,7 +692,7 @@
         <p class="sub" id="eStat" style="font-size:13px;margin-top:2px"></p>
       </div>
       <div class="efoot" id="eFoot" style="display:none">
-        <button class="btn" id="eNext" onclick="UI.showMap()">다음으로 ▶</button>
+        <button class="btn" id="eNext" onclick="UI.afterEnd()">다음으로 ▶</button>
       </div>
       <div class="fx" id="eFx"></div>
     </section>
@@ -2925,6 +2934,7 @@ function saveStats(){
 }
 function end(win){
   G.lastWin=!!win;G.lastDK=G.dk;
+  HOFPEND=null;HOFFLOW=false;   /* 지난 판의 대기 기록이 새 판으로 새지 않게 */
   G.mode="done";run=false;G.paused=false;
   hidePop();rvHide();$("rv").classList.remove("pay");
   $("fxLayer").innerHTML="";$("lvb").classList.remove("on");
@@ -3041,9 +3051,9 @@ function end(win){
     R.classList.remove("on");void R.offsetWidth;R.classList.add("on");
     [0,1,2].forEach(k=>tone(520+k*220,1100+k*260,.3,.12,"triangle",k*.09));
     noise(.4,.12);
-    /* 10위 안에 드는 점수면 별명을 묻는다 — 평소엔 아무것도 묻지 않는다 */
-    if(!TU.on&&D.k!=="tut"&&hofQualify(total))
-      setTimeout(()=>{if(UI.cur!=="scEnd")return;UI.hofAsk(total,base,G.dk);},700);
+    /* 10위 안에 들면 적어만 둔다. 묻는 건 아이가 '다음으로'를 누른 뒤다 —
+       결산을 읽기도 전에 팝업이 덮으면 기록을 볼 수가 없다. */
+    HOFPEND=(!TU.on&&D.k!=="tut"&&hofQualify(total))?{sc:total,base:base,dk:G.dk}:null;
   }
   function buildMap(){
     const COL=["#ff7fb0","#ff5f6d","#ff9e45","#ffd450","#3fd17a","#35c9c0","#4aa8ff","#a97fff"];
@@ -3099,7 +3109,7 @@ function countUp(el,from,to,ms,cb){
 /* ═══ 명예의 전당 — 이 기기 안에만 남는다 ═══
    서버 없이도 쉬는 시간 경쟁은 성립한다. 옆자리 애 이름 밑에 내 이름을 넣고 싶은 것. */
 const HOF_MAX=10, HOF_LEN=6;
-let HOFPEND=null, HOFNEW=0;
+let HOFPEND=null, HOFNEW=0, HOFFLOW=false;
 const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]));
 /* 금칙어 — 자모만 남기고 띄어쓰기·반복을 지운 뒤 검사한다 */
 const BAD=["시발","씨발","시팔","씨팔","쓰발","씨바","시바","개새","새끼","병신","븅신",
@@ -3166,6 +3176,7 @@ function refreshTitle(){
     bt.innerHTML="🎯 튜토리얼<small>"+(done?"실력 다시 재기":"내 실력은 어느 정도일까?")+"</small>";
   }
 }
+let DPICK=null;
 function buildDiff(){
   const h=$("dList");if(!h)return;
   h.innerHTML="";
@@ -3187,11 +3198,19 @@ function buildDiff(){
       t.innerHTML='<span class="sc">CLEAR</span><span class="sp">'+cl+'</span>';
       b.appendChild(t);}
 
-    /* 고르는 즉시 그 난이도로 들어간다 */
-    b.onclick=()=>{setDK(d.k);snd("ok");
-      $("ovDiff").classList.remove("on");G.start(d.k);};
+    /* 누르면 고르기만 한다 — 들어가는 건 아래 '시작' 버튼이다.
+       바로 시작하면 무엇을 고른 건지 확인할 틈이 없다. */
+    b.onclick=()=>{
+      DPICK=d.k;
+      h.querySelectorAll(".dRow").forEach(x=>x.classList.remove("sel"));
+      b.classList.add("sel");
+      $("dGo").textContent="⚔ "+d.lb+" 시작";
+      snd("ok");
+    };
     h.appendChild(b);
   });
+  DPICK=cur;
+  $("dGo").textContent="⚔ "+(DIFFS[cur]?DIFFS[cur].lb:"")+" 시작";
   /* 지금 고른 난이도가 보이도록 스크롤 */
   setTimeout(()=>{const sel=h.querySelector(".dRow.sel");
     if(sel&&sel.scrollIntoView)sel.scrollIntoView({block:"center"});},20);
@@ -3437,6 +3456,10 @@ const UI={
     this.go("scTest");
   },
   diffClose(){$("ovDiff").classList.remove("on");},
+  diffGo(){
+    const k=DPICK&&DIFFS[DPICK]?DPICK:curDK();
+    setDK(k);$("ovDiff").classList.remove("on");G.start(k);
+  },
   /* ── 기록 초기화 ── 설정(소리·흔들림 등)은 건드리지 않는다 ── */
   wipeAsk(){
     const n=[];
@@ -3469,10 +3492,21 @@ const UI={
         +'<span class="sc">'+r.sc.toLocaleString()+'</span>';
       h.appendChild(d);
     });
+    $("hofBack").textContent=HOFFLOW?"다음으로 ▶":"← 메인으로";
+    $("hofBack").classList.toggle("g",!HOFFLOW);
     this.go("scHof");snd("ok");
   },
-  hofAsk(sc,base,dk){
-    HOFPEND={sc:sc,base:base,dk:dk};
+  /* 결산 다음 — 신기록이면 별명을 묻고, 아니면 바로 지도로 */
+  afterEnd(){
+    if(HOFPEND){HOFFLOW=true;this.hofAsk();return;}
+    HOFFLOW=false;this.showMap();
+  },
+  hofBack(){
+    if(HOFFLOW){HOFFLOW=false;this.showMap();return;}
+    this.go("scTitle");
+  },
+  hofAsk(){
+    const sc=HOFPEND.sc, dk=HOFPEND.dk;
     $("hofSc").textContent=sc.toLocaleString();
     $("hofWhat").textContent=(DIFFS[dk]?DIFFS[dk].lb:"")+" · 전당 "+
       (hofLoad().filter(r=>r.sc>sc).length+1)+"위";
@@ -3482,7 +3516,10 @@ const UI={
     snd("up");
     setTimeout(()=>{try{inp.focus();inp.select();}catch(e){}},80);
   },
-  hofSkip(){$("ovHof").classList.remove("on");HOFPEND=null;},
+  hofSkip(){
+    $("ovHof").classList.remove("on");HOFPEND=null;
+    if(HOFFLOW){HOFFLOW=false;this.showMap();}
+  },
   hofOk(){
     if(!HOFPEND)return;
     const nm=$("hofIn").value.trim().slice(0,HOF_LEN);
@@ -3491,7 +3528,7 @@ const UI={
     const r=hofAdd(nm,HOFPEND.dk,HOFPEND.sc,HOFPEND.base);
     HOFNEW=hofLoad()[r]?hofLoad()[r].t:0;
     $("ovHof").classList.remove("on");HOFPEND=null;
-    this.hof();
+    this.hof();                       /* 내 순위를 보여준 뒤 지도로 이어진다 */
   },
   wipeDo(){
     try{
