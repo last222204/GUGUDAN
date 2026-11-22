@@ -418,9 +418,11 @@
   .dRow.sel .dn{color:#ffe88a}
   /* 고른 난이도 이름이 버튼에 들어간다 — '전설의 기사'까지 한 줄에 담겨야 한다.
      입체 턱(box-shadow)은 3px로 줄인다 — 5px짜리 진한 초록 띠가 튀어나와 보인다. */
-  #dClose{flex:0 0 26%;font-size:clamp(13px,3.5vw,16px);padding:12px 4px;
+  #dClose{flex:0 0 26%;width:auto;font-size:clamp(13px,3.5vw,16px);padding:12px 4px;
     box-shadow:0 3px 0 rgba(255,255,255,.07)}
-  #dGo{font-size:clamp(13px,3.5vw,17px);padding:12px 6px;white-space:nowrap;
+  /* .dov .btn{flex:0 0 auto} 가 .row>*{flex:1} 을 이겨서 버튼이 행 밖으로 나갔다 */
+  #dGo{flex:1 1 auto;width:auto;min-width:0;
+    font-size:clamp(13px,3.5vw,17px);padding:12px 6px;white-space:nowrap;
     overflow:hidden;text-overflow:ellipsis;box-shadow:0 3px 0 #1f7a4a}
   #dClose:active,#dGo:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
   .dRow .dn{font-size:clamp(16px,4.4vw,19px);font-weight:900;line-height:1.15}
@@ -530,7 +532,7 @@
           <button class="btn g" onclick="UI.wipeAsk()">🧹 기록 초기화</button>
           <button class="btn g" onclick="UI.opts()">⚙ 설정</button>
         </div>
-        <p class="sub" style="font-size:11px;color:#4a556e">v1.24</p>
+        <p class="sub" style="font-size:11px;color:#4a556e">v1.25</p>
       </div>
 
       <!-- 기록 초기화 확인 — 되돌릴 수 없으니 한 번 묻는다 -->
