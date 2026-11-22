@@ -416,10 +416,13 @@
   .dRow.sel{border-color:#ffd450;background:rgba(255,212,80,.13);
     box-shadow:0 0 22px rgba(255,212,80,.33)}
   .dRow.sel .dn{color:#ffe88a}
-  /* 고른 난이도 이름이 버튼에 들어간다 — '전설의 기사'까지 한 줄에 담겨야 한다 */
-  #dClose{flex:0 0 26%;font-size:clamp(14px,3.8vw,17px);padding:14px 4px}
-  #dGo{font-size:clamp(14px,3.8vw,18px);padding:14px 6px;white-space:nowrap;
-    overflow:hidden;text-overflow:ellipsis}
+  /* 고른 난이도 이름이 버튼에 들어간다 — '전설의 기사'까지 한 줄에 담겨야 한다.
+     입체 턱(box-shadow)은 3px로 줄인다 — 5px짜리 진한 초록 띠가 튀어나와 보인다. */
+  #dClose{flex:0 0 26%;font-size:clamp(13px,3.5vw,16px);padding:12px 4px;
+    box-shadow:0 3px 0 rgba(255,255,255,.07)}
+  #dGo{font-size:clamp(13px,3.5vw,17px);padding:12px 6px;white-space:nowrap;
+    overflow:hidden;text-overflow:ellipsis;box-shadow:0 3px 0 #1f7a4a}
+  #dClose:active,#dGo:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
   .dRow .dn{font-size:clamp(16px,4.4vw,19px);font-weight:900;line-height:1.15}
   .dRow .dm{font-size:clamp(12px,3.1vw,13.5px);color:#8fa0c0;font-weight:800;margin-top:3px}
   .dRow .dm b{color:#ffd450;font-weight:900}
@@ -445,6 +448,9 @@
   @keyframes recPulse{0%,100%{box-shadow:0 0 22px rgba(255,90,90,.3)}
     50%{box-shadow:0 0 34px rgba(255,90,90,.6)}}
   .dRow.rec{animation:recPulse 1.8s infinite}
+  .dRow.rec.sel{border-color:#ffd450;background:rgba(255,212,80,.13);
+    box-shadow:0 0 22px rgba(255,212,80,.33);animation:none}
+  .dRow.rec.sel .dn{color:#ffe88a}
   .mapT{text-align:center;font-size:clamp(19px,5vw,24px);margin:2px 0 6px}
   .eHead{text-align:center;padding-top:2px}
   .eRank{font-size:clamp(44px,12vw,68px);font-weight:900;line-height:1;opacity:0;margin-top:2px}
@@ -524,7 +530,7 @@
           <button class="btn g" onclick="UI.wipeAsk()">🧹 기록 초기화</button>
           <button class="btn g" onclick="UI.opts()">⚙ 설정</button>
         </div>
-        <p class="sub" style="font-size:11px;color:#4a556e">v1.23</p>
+        <p class="sub" style="font-size:11px;color:#4a556e">v1.24</p>
       </div>
 
       <!-- 기록 초기화 확인 — 되돌릴 수 없으니 한 번 묻는다 -->
